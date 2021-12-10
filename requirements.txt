@@ -1,0 +1,16 @@
+requests~=2.25.1
+pandas~=1.2.4
+bs4~=0.0.1
+beautifulsoup4~=4.9.3
+modin~=0.8.3
+setuptools~=52.0.0
+numpy~=1.19.5
+pillow~=8.3.1
+livelossplot~=0.5.4
+scikit-learn~=0.24.2
+scipy~=1.7.0
+matplotlib~=3.4.2
+gensim~=4.1.2
+google-cloud-vision~=2.4.4
+selenium~=3.141.0
+seaborn~=0.10.1

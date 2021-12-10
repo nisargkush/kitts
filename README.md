@@ -1,2 +1,2 @@
 # kitts
-Know your Trending travel story using unsupervised learning on Instagram Post Images
+Know instagram trending travel story using unsupervised learning on public Post Images

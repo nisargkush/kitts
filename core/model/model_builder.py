@@ -11,7 +11,7 @@ import re
 import argparse
 import pandas as pd
 from pathlib import Path
-from config import GAPP_CRED, DATA_DIR, ANNOTATED_DIR, RAW_DATA_DIR, GlOVE_FILE_PATH, GLOVE_FILE, CLUSTERED_DIR
+from kitts.config import GAPP_CRED, DATA_DIR, ANNOTATED_DIR, RAW_DATA_DIR, GlOVE_FILE_PATH, GLOVE_FILE, CLUSTERED_DIR
 
 
 def count_vectorize(dataframe, column_name, max_features):

@@ -2,10 +2,6 @@ import os
 import sys
 from pathlib import Path
 
-#if Path(__file__).resolve().parent not in sys.path:
-#    sys.path.append(Path(__file__).resolve().parent.parent.parent)
-
-#PROJECT_ROOT_DIR = Path(os.getcwd()).resolve().parent
 PROJECT_ROOT_DIR = Path(__file__).resolve().parent
 #Path(__file__).resolve().parent.parent
 DATA_DIR = os.path.join(PROJECT_ROOT_DIR, 'data')

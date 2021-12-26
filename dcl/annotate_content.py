@@ -66,7 +66,7 @@ def gcv_annotate(file):
             # Performs label detection on the image file
             response = client.label_detection(image=image)
             labels = response.label_annotations                
-            img_lable_list.append(' '.join([re.sub(' ', '-',label.description) for label in labels]))
+            img_lable_list.append((' '.join([re.sub(' ', '-',label.description) for label in labels])).lower())
             img_lable_score.append([[re.sub(' ', '-',label.description) ,label.score] for label in labels])
             counter += 1
         except Exception as e:
@@ -78,7 +78,7 @@ def gcv_annotate(file):
     
     #removing duplicate data per shortcode keeping post with highest like
     dedup_df = dataset_utils.dedup_dataframe(post_df)
-    
+
     annotated_file = os.path.join(annotate_file_path,file_name)  
     
     #Storing dataframe as csv files per hashtag

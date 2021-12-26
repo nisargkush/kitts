@@ -1,25 +1,24 @@
-"""Instagram dataset & image Downloader
+"""AVA Dataset Downloader
 Usage:
-  collect_content.py (-u | --username) <Instagram User Name> (-p | --password) <password> (-t | --hashtag) <Hashtag without '#'> (-b | --basepath) <path name>
-  collect_content.py (-h | --help)
-  collect_content.py --version
+  collect_content.py (-d | --dir) <full_path>
+  ava_downloader.py (-h | --help)
+  ava_downloader.py --version
 Options:
   -h --help              Show this screen.
   --version              Show version.
-  -u | --username      	 Instagram username  to login
-  -p | --password		 Password
-  -t | --hashtag		 Hashtag without '#'
-  -b | --basepath		 Directory to store post csv file and images in subfolder (Optional)
+  -d --download-dir      Download directory of the project, default is the current script directory ../../data/AVA/images
 """
 
 #imports here
 import time 
 import argparse
+#import requests, urllib.request
+#import re
 import json
 import pandas as pd
+import numpy as np
 import os
 import wget
-
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
@@ -27,34 +26,29 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from datetime import datetime
 from bs4 import BeautifulSoup
-
-#importing
 from kitts.config import DATA_DIR, DATA_FILES_DIR, RAW_DATA_DIR, WEBDRIVER_LOC, BASE_URL
+#from kitts.utils import dataset_utils
 
-column_list = [
-               'shortcode',
-               'post_date',
-               'post_url',
-               'display_url',               
-               'like_and_view_counts_disabled',
-               'likes',
-               'is_paid_partnership',
-               'location',
-               'city',
-               'exact_city_match',               
-               'is_video',
-               'is_verified',
-               'is_private',
-               'img_path',
-               'img_lables',
-               'img_lable_scores'
-              ]
 
+"""
+class UgcData():
+    def __init__(self, username ,userpass ,basepath ,web_url = 'http://www.instagram.com'
+                 ,webDriver_path = 'C:/Docs/chromedriver_win32/chromedriver.exe'
+                 ,hashtag = None):
+        self.username = username
+        self.userpass = userpass
+        if hashtag == None:
+            self.hashtag = []
+        else:
+            self.hashtag = hashtag
+        self.basepath = basepath
+        self.webDriver_path = webDriver_path
+        self.web_url = 'http://www.instagram.com'
+"""  
 
 def collect_posts(user, userpass, hashtag, base_path = DATA_FILES_DIR):
-    """Scrap Instagram post data from browser along with image URL"""
     #specify the path to chromedriver.exe (download and save on your computer)
-    driver = webdriver.Chrome(WEBDRIVER_LOC)
+    driver = webdriver.Chrome(WEBDRIVER_LOC)#'C:/Docs/chromedriver_win32/chromedriver.exe'
     file_name =  ''    
     #open the webpage        
     print("Opening Browser")
@@ -112,6 +106,11 @@ def collect_posts(user, userpass, hashtag, base_path = DATA_FILES_DIR):
     
         #collecting post details
         listinformation = []
+        column_list = ['shortcode', 'post_date', 'post_url', 'display_url',
+                   'like_and_view_counts_disabled','likes',
+                   'is_paid_partnership','location','city','exact_city_match',
+                   'lattitude','longitude','geo_city','geo_state','geo_country',
+                   'is_video','is_verified','is_private']
         counter = 0
         for iteration in posts:
             html = driver.get(iteration + "?__a=1")
@@ -127,33 +126,67 @@ def collect_posts(user, userpass, hashtag, base_path = DATA_FILES_DIR):
             try:
                 location = jsondata["graphql"]["shortcode_media"]["location"]["name"]
             except:
-                location = ''
+                location = 'dummy'
             try:
                 address_j = json.loads(jsondata["graphql"]["shortcode_media"]["location"]["address_json"])
                 city = address_j['city_name']
                 exact_city_match = address_j['exact_city_match']
             except:
-                city = ''
+                city = 'dummy'
                 exact_city_match = ''
             #has_public_page = jsondata["graphql"]["shortcode_media"]["location"]["has_public_page"]
             is_video = jsondata["graphql"]["shortcode_media"]["is_video"]
             is_verified = jsondata["graphql"]["shortcode_media"]["owner"]["is_verified"]
-            is_private = jsondata["graphql"]["shortcode_media"]["owner"]["is_private"]
+            is_private = jsondata["graphql"]["shortcode_media"]["owner"]["is_private"]  
+            
+            lattitude = ''
+            longitude = ''
+            geo_city = ''
+            geo_state = ''
+            geo_country = ''
+            
+            """
+            #Below code deprecated as of now. Keeping here to revist this logic later
+            if city != 'dummy':
+                print('here1')
+                lattitude,longitude,geo_city,geo_state,geo_country = dataset_utils.geo_coordinates(city)
+                print(f'{lattitude},{longitude},{geo_city},{geo_state},{geo_country}')                  
+            elif location != 'dummy':                
+                print('here2')
+                city= ''
+                lattitude,longitude,geo_city,geo_state,geo_country = dataset_utils.geo_coordinates(location)
+                print(f'{lattitude},{longitude},{geo_city},{geo_state},{geo_country}')                  
+            else:
+                print('here3')
+                city = ''
+                location = ''
+                lattitude = ''
+                longitude = ''
+                geo_city = ''
+                geo_state = ''
+                geo_country = ''
+            print(f'{lattitude},{longitude},{geo_city},{geo_state},{geo_country}')
+            """
          
             listinformation.append([shortcode,post_date,iteration,display_url,
                                     like_and_view_counts_disabled,edge_media_preview_like,
                                     is_paid_partnership,location,city,exact_city_match,
-                                    is_video,is_verified,is_private,'','',''])
+                                    lattitude,longitude,geo_city,geo_state,geo_country,
+                                    is_video,is_verified,is_private])
             counter += 1
         
         # Create Datafram and convert it to csv file based on given path    
-        print('no of posts succesfully collected:',counter)  
-        post_df = pd.DataFrame(listinformation,  columns = column_list)
+        print('no of posts succesfully collected:',counter)   
+        post_df = pd.DataFrame(listinformation,  columns = column_list) 
+        
+        #Normalizing post_date column to ensure date format is same throughout
+        post_df['post_date'] = pd.to_datetime(post_df['post_date']).dt.normalize()
+        
         try:
             #print(base_path)
             file_path = os.path.normpath(os.path.join(base_path,hashtag))            
             if os.path.isdir(file_path):
-                print(f'Path: {file_path} ,to store file already exists. Collecting fresh post and adding to same file')
+                print(f'Path: {file_path} ,to store file already exists. Appending fresh record to same')
             else:
                 os.mkdir(file_path)
             file_name = os.path.join(file_path,hashtag) + ".csv"
@@ -172,10 +205,10 @@ def collect_posts(user, userpass, hashtag, base_path = DATA_FILES_DIR):
         return file_name
         
 def collect_post_image(file):
-    """doenloads image from the path given in data file and updates csv back with local file path name"""
+    
     file_path, file_name= os.path.split(file)
-    #print("file_path",file_path)
-    #print("file_name",file_name)  
+    print("file_path",file_path)
+    print("file_name",file_name)  
     image_path = os.path.normpath(os.path.join(file_path,'Images'))   
     try:  
         if os.path.isdir(image_path):
@@ -197,22 +230,20 @@ def collect_post_image(file):
                 except:
                     img_path_list.append('')
         post_df["img_path"] = img_path_list 
-        img_loc_file_path = os.path.join(RAW_DATA_DIR,file_name)   
-        post_df.to_csv(img_loc_file_path, index = None)
+        img_file = os.path.join(RAW_DATA_DIR,file_name)   
+        post_df.to_csv(img_file, index = None)
         print('no of images succesfully downloaded:',counter)    
-        print('File containing imag URLs stored at path ',img_loc_file_path)
-        return img_loc_file_path
-    except Exception as e:
+    except:
         print("exception creating csv file. Hence not downloaded images")
-        print(e)
+    return img_file
 
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Data collection from Instagram Post data based on hashtag')
-    parser.add_argument('-u', '--username', type=str, default=None, required=True,
+    parser.add_argument('-u', '--username', type=str, default='narenkishu', required=False,
                         help='Login username')
-    parser.add_argument('-p', '--password', type=str, default=None, required=True,
+    parser.add_argument('-p', '--password', type=str, default='Inst@1822', required=False,
                         help='Login Password')
     parser.add_argument('-t', '--hashtag', type=str, default=None, required=True,
                         help='Hashtag value without #')
@@ -227,17 +258,14 @@ if __name__ == '__main__':
         
     #Checking existence of files for given hastag and calling collect_post funtion
     if os.path.isdir(filepath):
-        print(f'Path: {filepath} ,to store file already exists. Collecting fresh post and adding to same file')
-        filename = collect_posts(args.username, args.password, args.hashtag, args.basepath)
+        print(f'Path: {filepath} ,to store file already exists')
     else:
-        print(f'Path: {filepath} ,to store file does not exist. Collecting post ina a new file')
         filename = collect_posts(args.username, args.password, args.hashtag, args.basepath)
     
     #Checking success of collect_post funciton for given hastag and calling collect_post_image funtion
     if filename == '':
-        print(f'Unable to download posts for hashtag {args.hashtag}')
+        print(f'Images already exist for tag #{args.hashtag}. Nothing to download')
     else:
-        print(f'collecting images for post with {args.hashtag}')
         collect_post_image(filename)
 
 

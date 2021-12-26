@@ -11,7 +11,8 @@ import re
 #import argparse
 import pandas as pd
 from pathlib import Path
-from kitts.config import ANNOTATED_DIR
+from kitts.config import ANNOTATED_DIR, EXCLUDE, MAPQKEY, MAPQURL
+from kitts.utils import dataset_utils
 
 
 def accumulate_dataframe(filepath = ANNOTATED_DIR):
@@ -40,60 +41,246 @@ def dedup_dataframe(dataframe):
     dedup_df = sortedbdf.drop_duplicates(subset = ["shortcode"], keep = 'first')
     return dedup_df
 
-"""       
-def cleanse_lable(dataframe, column, lower=True, ascii_chars=True, no_numbers=True, no_punctuation=True, remove_stopwords=True, lemmatize=True, custom_blank_text='non ascii symbols punctuations numbers'):
-    
-    from nltk.corpus import stopwords
-    from nltk.stem import WordNetLemmatizer
-    import nltk    
-    import string
-    
-    #Lower case
-    if lower == True:
-        dataframe['Query_Modified'] = dataframe[column].str.lower()
-    
-    #Remove non-ascii characters
-    if ascii_chars == True:                            
-        dataframe["Clean_Lables"] = dataframe["Clean_Lables"].apply(lambda x: ''.join([" " if i not in string.printable else i for i in x]))
-    
-    #Remove numbers
-    if no_numbers == True:
-        dataframe['Clean_Lables'] = dataframe['Clean_Lables'].str.replace(r'\d', '')
-    
-    #Punctuation
-    if no_punctuation == True:
-        dataframe['Clean_Lables'] = dataframe['Clean_Lables'].str.replace(r'[^\w\s]+', ' ')
-    
-    #Remove stopwords
-    if remove_stopwords == True:
-        stop = stopwords.words('english')
-        dataframe['Clean_Lables'] = dataframe['Clean_Lables'].apply(lambda x: ' '.join([word for word in x.split() if word not in (stop)]))
-    
-    #Lemmatize words
-    if lemmatize == True:
-        wnl = WordNetLemmatizer()
-        def lemmatize_all(sentence):
-            text = list()
-            for word, tag in nltk.pos_tag(str.split(sentence)):
-                if tag.startswith("NN"):
-                    text.append( wnl.lemmatize(word, pos='n'))
-                elif tag.startswith('VB'):
-                    text.append( wnl.lemmatize(word, pos='v'))
-                elif tag.startswith('JJ'):
-                    text.append( wnl.lemmatize(word, pos='a'))
-                else:
-                    text.append( word)
-            return ' '.join(text)            
+def condition_labels(dataframe, column_name ='img_lables', exclude = False, exclude_tokens = EXCLUDE):
+    """Removes words from img_labels column that matches exclude list"""
+    dataframe[column_name] = dataframe[column_name].astype(str)
+    dataframe[column_name] = dataframe[column_name].apply(lambda x: x.lower())
+    if exclude:
+        dataframe[column_name] = [' '.join([item for item in x.split() if item not in exclude_tokens]) for x in dataframe[column_name]]    
+    else:
+        pass
+      
+    return dataframe
 
-        dataframe['Clean_Lables'] = dataframe['Clean_Lables'].apply(lambda sentence: ' '.join([lemmatize_all(sentence)]))
+"""
+Depricated
+def geo_coordinates(address):
+    Utility to obtain geocoding for given address using Mapquest API services
+    Parameters:
+        Address - A string containing address to be geocoded
+    Return:
+        lattitude,longitude,geo_city,geo_state,geo_country
+    import requests
+    import json
     
-    #Replacing blanks from ascii characters, punctuations and numbers with custom text
-    dataframe['Clean_Lables'].replace(r'^\s*$', custom_blank_text, regex=True, inplace = True)
+    lattitude = ''
+    longitude = ''
+    geo_city = ''
+    geo_state = ''
+    geo_country = ''
+
+    print('calling geo_coordinates for {address}')  
+    parameters = {
+        "key": MAPQKEY,
+        "location": address
+    }
+
+    try:
+        response = requests.get(MAPQURL, params=parameters)
     
-    #Extra Spaces
-    dataframe['Clean_Lables'] = dataframe['Clean_Lables'].apply(lambda x: re.sub("\s\s+", " ", str(x.strip())))
+        if response.status_code ==  200:                 
+            jdata = json.loads(response.text)['results']              
+            lattitude = jdata[0]['locations'][0]['latLng']['lat']
+            longitude = jdata[0]['locations'][0]['latLng']['lng']
+            geo_city = jdata[0]['locations'][0]['adminArea5']
+            geo_state = jdata[0]['locations'][0]['adminArea3']
+            geo_country = jdata[0]['locations'][0]['adminArea1'] 
+    except:                
+        str_address = address.split(',')
+        if len(str_address)==1:
+            geo_city = str_address[0]
+        elif len(str_address)==2:
+            geo_city = str_address[0]
+            geo_country = str_address[1]
+        elif len(str_address)==3:
+            geo_city = str_address[0]
+            geo_state = str_address[1]
+            geo_country = str_address[2]
+        else:   
+            pass
+    print('Success - calling geo_coordinates for {address}')  
+    return lattitude,longitude,geo_city,geo_state,geo_country
+
+"""
+
+
+def geo_coordinates(datafile):
+    """For one time use only to upgrade already downloaded data with geocodes"""
     
-    print('Done')
+    import pandas as pd
+    import requests
+    import json
     
-    return dataframe   
-"""   
+    data = pd.read_csv(datafile) 
+    data.fillna('', inplace=True)
+    
+    for i, row in data.iterrows(): 
+        address = ''    
+        lattitude = ''
+        longitude = ''
+        geo_city = ''
+        geo_state = ''
+        geo_country = ''
+        
+        if row.city == '':
+            if row.location == '':
+                pass
+            else:
+                address = row.location
+        else:
+            address = row.city
+            
+        if address != '' and row.geo_country == '':          
+            #print('calling mapquest API')
+            parameters = {
+                "key": MAPQKEY,
+                "location": address
+            }
+        
+            try:
+                response = requests.get(MAPQURL, params=parameters)
+            
+                if response.status_code ==  200:                    
+                    
+                    jdata = json.loads(response.text)['results']    
+                  
+                    lattitude = jdata[0]['locations'][0]['latLng']['lat']
+                    longitude = jdata[0]['locations'][0]['latLng']['lng']
+                    geo_city = jdata[0]['locations'][0]['adminArea5']
+                    geo_state = jdata[0]['locations'][0]['adminArea3']
+                    geo_country = jdata[0]['locations'][0]['adminArea1']
+            except Exception as e:
+                print(e)
+                str_address = address.split(',')
+                if len(str_address)==1:
+                    geo_city = str_address[0]
+                elif len(str_address)==2:
+                    geo_city = str_address[0]
+                    geo_country = str_address[1]
+                elif len(str_address)==3:
+                    geo_city = str_address[0]
+                    geo_state = str_address[1]
+                    geo_country = str_address[2]
+                else:   
+                    pass
+                    
+            data.loc[i, 'lattitude'] = lattitude
+            data.loc[i, 'longitude'] = longitude
+            data.loc[i, 'geo_city'] = geo_city
+            data.loc[i, 'geo_state'] = geo_state
+            data.loc[i, 'geo_country'] = geo_country
+            
+            #print('Mapquest API Success')
+    
+    #Storing dataframe as csv files per hashtag
+    data.to_csv(datafile, index = None)    
+    
+    print("Geocoded file path:",datafile)
+
+def normalize_date(filepath):
+    
+    """to be used only for Bulk correction/normalozation of date format to normalize()
+    function to normalize date column to post_date column
+    Parameters:
+        Data -> Dataframe
+    Returns:
+        Dataframe with normalized date
+    """	
+	
+    import pandas as pd
+    import os
+    from pathlib import Path
+	
+    if os.path.isdir(filepath):
+        print(f'Source Path exists: {filepath}')
+        for file in Path(filepath).glob('*.csv'):    
+            print('*******************************')
+            print(f'Normalizing post_date for file {file} ........')
+            data = pd.read_csv(file)
+            data['post_date'] = pd.to_datetime(data['post_date']).dt.normalize()
+            data.to_csv(file, index = None)
+            print("Date Normalized for file at path:",file)
+    else:
+        print(f'Source Path does not exists: {filepath}')
+            
+def geo_coordinates_df(datafile):
+    """For one time use only to upgrade already downloaded data with geocodes"""
+    
+    import pandas as pd
+    import requests
+    import json
+    
+    data = pd.read_csv(datafile)    
+    data.fillna('', inplace=True)
+    
+    lattitude_list = []
+    longitude_list = [] 
+    geo_city_list = []
+    geo_state_list = []
+    geo_country_list = []
+    
+    for i, row in data.iterrows(): 
+        address = ''    
+        lattitude = ''
+        longitude = ''
+        geo_city = ''
+        geo_state = ''
+        geo_country = ''
+        if row.city == '':
+            if row.location == '':
+                pass
+            else:
+                address = row.location
+        else:
+            address = row.city
+        if address != '':  
+            parameters = {
+                "key": MAPQKEY,
+                "location": address
+            }
+        
+            try:
+                response = requests.get(MAPQURL, params=parameters)
+            
+                if response.status_code ==  200:                    
+                    
+                    jdata = json.loads(response.text)['results']    
+                  
+                    lattitude = jdata[0]['locations'][0]['latLng']['lat']
+                    longitude = jdata[0]['locations'][0]['latLng']['lng']
+                    geo_city = jdata[0]['locations'][0]['adminArea5']
+                    geo_state = jdata[0]['locations'][0]['adminArea3']
+                    geo_country = jdata[0]['locations'][0]['adminArea1']
+            except Exception as e:
+                print(e)
+                str_address = address.split(',')
+                if len(str_address)==1:
+                    geo_city = str_address[0]
+                elif len(str_address)==2:
+                    geo_city = str_address[0]
+                    geo_country = str_address[1]
+                elif len(str_address)==3:
+                    geo_city = str_address[0]
+                    geo_state = str_address[1]
+                    geo_country = str_address[2]
+                else:   
+                    pass
+                    
+        lattitude_list.append(lattitude)
+        longitude_list.append(longitude)
+        geo_city_list.append(geo_city)
+        geo_state_list.append(geo_state)
+        geo_country_list.append(geo_country)                
+       
+    data.insert(loc = 10,column = 'lattitude', value = lattitude_list)
+    data.insert(loc = 11,column = 'longitude', value = longitude_list)
+    data.insert(loc = 12,column = 'geo_city', value = geo_city_list)
+    data.insert(loc = 13,column = 'geo_state', value = geo_state_list)
+    data.insert(loc = 14,column = 'geo_country', value = geo_country_list)
+    
+    #Storing dataframe as csv files per hashtag
+    data.to_csv(datafile, index = None)    
+    
+    print("Geocoded file path:",datafile)
+    
+    return data

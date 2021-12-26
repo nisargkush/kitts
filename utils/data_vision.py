@@ -59,8 +59,55 @@ def showimlable(dataframe, n):
     plt.figure(figsize=(4,4))
     plt.grid(False)
     img = mpimg.imread(os.path.normpath(data['img_path']))
-    imgplot = plt.imshow(img)
+    plt.imshow(img)
     plt.show()
     print ('Post Date: ',data['post_date'])
     print ('City: ',data['city'])
     print ('Image Labels: ',data['img_lables'])
+    
+    
+def km_silhouette_visualizer(vectorized_docs, clusters_i = [12, 13, 14, 15,16,17]):
+    """
+    Displays Silhouette Visulaizer for K means clutering algorithm
+    Parameter - 
+    vectorized docs - a list doc/word vestors
+    clusters_i = list of number of clusters to compare. Accepts even number of clusters to compare. Else pads with a random number between 1-20
+    """
+    
+    from yellowbrick.cluster import SilhouetteVisualizer
+    import matplotlib.pyplot as plt
+    from sklearn.cluster import KMeans
+    import numpy as np
+    import random 
+    
+           
+    try:
+        npcluster = np.array(clusters_i).reshape(-1,2)
+    except ValueError:
+        clusters_i.append(random.randint(1,20))
+        npcluster = np.array(clusters_i).reshape(-1,2)
+        
+    r, c = np.array(npcluster).reshape(-1,2).shape
+    
+    fig, ax = plt.subplots(r, c, figsize=(15,8))
+    for i in clusters_i:
+        '''
+        Create KMeans instance for different number of clusters
+        '''
+        km = KMeans(n_clusters=i, init='k-means++', n_init=10, max_iter=100, random_state=42)
+        
+        #getting positions to plot silhouette from 2Dnumpy array
+        row, column = np.where(npcluster==i)
+        modr = row[0]
+        modc = column[0]
+        
+        #q, modc = divmod(i, c)
+        #p, modr = divmod(q, r)
+        '''
+        Create SilhouetteVisualizer instance with KMeans instance
+        Fit the visualizer
+        '''
+        ax[modr, modc].set_title(f'n = {i} Clusters')
+        visualizer = SilhouetteVisualizer(km, colors='yellowbrick', ax=ax[modr][modc])
+        visualizer.fit(np.array(vectorized_docs))
+    

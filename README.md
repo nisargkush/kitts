@@ -1,7 +1,7 @@
 # Know Instagram Trending Travel stories
-Know instagram trending travel story(kitts) using unsupervised learning on public Post Images.
+Know instagram trending travel story(KITTS) using unsupervised learning on public Post Images.
 
-Analyzing trending travel patters using unsupervised(clustering) & semi-supervised(correlation explanation topic modelling) machine learning models.
+Analyzes trending travel patters using unsupervised(clustering) & semi-supervised(correlation explanation topic modelling) machine learning models.
 
 # Objective
 •	Providing a methodical framework to identify trending activities at a travel destination using unsupervised/semi-supervised machine learning models.

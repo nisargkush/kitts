@@ -1,8 +1,8 @@
 """Instagram image Annotater
 Usage:
   annotate_content.py (-f | --filpath)
-  collect_content.py (-h | --help)
-  collect_content.py --version
+  annotate_content.py (-h | --help)
+  annotate_content.py --version
 Options:
   -h --help              Show this screen.
   --version              Show version.

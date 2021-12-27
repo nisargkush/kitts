@@ -14,12 +14,9 @@ Methods & Options:
     
 """
 
-#import io
 import os
-#import re
-import argparse
+#import argparse
 import pandas as pd
-from pathlib import Path
 from kitts.config import W2V_MODEL_FNAME, TOURISM_ANCHORS, CLUSTERED_DIR
 #from sklearn import cluster
 

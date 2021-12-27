@@ -1,15 +1,12 @@
 """Instagram image Annotater
 Usage:
-  collect_content.py (-u | --username) <Instagram User Name> (-p | --password) <password> (-t | --hashtag) <Hashtag without '#'> (-b | --basepath) <path name>
+  annotate_content.py (-f | --filpath)
   collect_content.py (-h | --help)
   collect_content.py --version
 Options:
   -h --help              Show this screen.
   --version              Show version.
-  -u | --username      	 Instagram username  to login
-  -p | --password		 Password
-  -t | --hashtag		 Hashtag without '#'
-  -b | --basepath		 Directory to store post csv file and images in subfolder (Optional)
+  -f | --filpath		 Directory to pick up one or more files and annotate it with Image labels (Optional)
 """
 
 import io
@@ -18,7 +15,7 @@ import re
 import argparse
 import pandas as pd
 from pathlib import Path
-from kitts.config import GAPP_CRED, DATA_DIR, ANNOTATED_DIR, RAW_DATA_DIR
+from kitts.config import GAPP_CRED, ANNOTATED_DIR, RAW_DATA_DIR
 from kitts.utils import dataset_utils
 
 # Imports the Google Cloud client library
@@ -32,7 +29,15 @@ os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = GAPP_CRED
 client = vision.ImageAnnotatorClient()
 
 def gcv_annotate(file):  
-    """calls google vision API for one file or all the file in a path to annotate and populate csv file back with labels"""
+    """
+    Calls google vision API for one file or all the file in a path to annotate and populate csv file back with labels
+    and stored it back to kitts.config.ANNOTATED_DIR. To change this path update in config file
+    Parameters:
+        file : Directory to pick up one or more files and annotate it with Image labels (Optional)
+               defaulted to config.RAW_DATA_DIR
+    Returns:
+        Annotated file path including file name
+    """
     file_path, file_name= os.path.split(file)
     #print("file_path",file_path)
     print("file_name",file_name)  
@@ -107,5 +112,3 @@ if __name__ == '__main__':
             gcv_annotate(file)
     else:        
         print(f'Source Path does not exists: {args.filepath}')
-    
-

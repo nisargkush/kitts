@@ -1,8 +1,17 @@
-# -*- coding: utf-8 -*-
 """
-Created on Sat Nov 20 12:52:40 2021
-
-@author: nkushwaha
+Model Builder containing model and supporting utilities to build clustering and topic models
+Classes:
+    Tokenizer : Class containing methods to tolenize image lables
+    SimpleVectorize : Class containing count vectorizer and TFIDF vectorizer to generate feature vectore 
+                      and feature names
+    Word2Vectorize :  Class containing word2vec vectorizer methods to train, call and use w2v model from 
+                     image label tokens and generate feature vectore and feature names
+    kittsCluster : Encapsulates Kmeans funtionality methods to train and visualize cluster models.
+                   Provides utilities to train, store and visualize clustered features
+    CorexModel : Corelation Explanation, topic model to train and visualization utility to create,
+                 store and visualize clustered features using, semi-supervized anchoring techniques
+Methods & Options:
+    
 """
 
 #import io
@@ -598,23 +607,4 @@ def summary(dataframe, cluster_column, aggr_column, original_column, modified_co
     df = pd.concat([df, modified_keywords.reset_index(drop=True)], axis=1)
     df = df.round(4)
     
-    return df  
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(
-        description='Data collection from Instagram Post data based on hashtag')
-    parser.add_argument('-f', '--filepath', type=str, default='', required=False,
-                        help='File Path')
-    
-    args = parser.parse_args()
-        
-        
-    #Checking existence of files for given hastag and calling collect_post funtion
-    if os.path.isdir(args.filepath):
-        print(f'Source Path exists: {args.filepath}')
-        for file in Path(args.filepath).glob('*.csv'):    
-            print('*******************************')
-            print(f'Annotaing file {file} ........')
-            pass
-    else:        
-        print(f'Source Path does not exists: {args.filepath}')    
+    return df    

@@ -1,8 +1,8 @@
-"""AVA Dataset Downloader
+"""Instagram Post scrapper, post collection and image downloader
 Usage:
-  collect_content.py (-d | --dir) <full_path>
-  ava_downloader.py (-h | --help)
-  ava_downloader.py --version
+   collect_content.py (-u | --dir)  <User Name> (-p | --dir)  <User Password> (-t | --dir)  <hashtag without #>
+   collect_content.py (-h | --help)
+   
 Options:
   -h --help              Show this screen.
   --version              Show version.
@@ -16,7 +16,6 @@ import argparse
 #import re
 import json
 import pandas as pd
-import numpy as np
 import os
 import wget
 from selenium import webdriver
@@ -26,25 +25,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from datetime import datetime
 from bs4 import BeautifulSoup
-from kitts.config import DATA_DIR, DATA_FILES_DIR, RAW_DATA_DIR, WEBDRIVER_LOC, BASE_URL
+from kitts.config import  DATA_FILES_DIR, RAW_DATA_DIR, WEBDRIVER_LOC, BASE_URL
 #from kitts.utils import dataset_utils
 
-
-"""
-class UgcData():
-    def __init__(self, username ,userpass ,basepath ,web_url = 'http://www.instagram.com'
-                 ,webDriver_path = 'C:/Docs/chromedriver_win32/chromedriver.exe'
-                 ,hashtag = None):
-        self.username = username
-        self.userpass = userpass
-        if hashtag == None:
-            self.hashtag = []
-        else:
-            self.hashtag = hashtag
-        self.basepath = basepath
-        self.webDriver_path = webDriver_path
-        self.web_url = 'http://www.instagram.com'
-"""  
 
 def collect_posts(user, userpass, hashtag, base_path = DATA_FILES_DIR):
     #specify the path to chromedriver.exe (download and save on your computer)
@@ -189,6 +172,7 @@ def collect_posts(user, userpass, hashtag, base_path = DATA_FILES_DIR):
                 print(f'Path: {file_path} ,to store file already exists. Appending fresh record to same')
             else:
                 os.mkdir(file_path)
+                print(f'Path: {file_path} ,to store file does not exists. Creating path and saving csv file')
             file_name = os.path.join(file_path,hashtag) + ".csv"
             if os.path.isfile(file_name):
                 post_df.to_csv(file_name, index = None, mode='a', header=False)
@@ -241,9 +225,9 @@ def collect_post_image(file):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Data collection from Instagram Post data based on hashtag')
-    parser.add_argument('-u', '--username', type=str, default='narenkishu', required=False,
+    parser.add_argument('-u', '--username', type=str, default=None, required=True,
                         help='Login username')
-    parser.add_argument('-p', '--password', type=str, default='Inst@1822', required=False,
+    parser.add_argument('-p', '--password', type=str, default=None, required=True,
                         help='Login Password')
     parser.add_argument('-t', '--hashtag', type=str, default=None, required=True,
                         help='Hashtag value without #')
@@ -256,16 +240,15 @@ if __name__ == '__main__':
     filepath = os.path.normpath(os.path.join(args.basepath,args.hashtag))
     
         
-    #Checking existence of files for given hastag and calling collect_post funtion
-    if os.path.isdir(filepath):
-        print(f'Path: {filepath} ,to store file already exists')
-    else:
+    #Checking existence of base file path and calling collect_post funtion
+    if os.path.isdir(args.basepath):
+        print(f'Base Path: {args.basepath} ,to store file exists, Proceeding to collect records.........')
         filename = collect_posts(args.username, args.password, args.hashtag, args.basepath)
+    else:
+        print(f'Base Path: {args.basepath} ,to store file does not exists, Please create base file path')
     
     #Checking success of collect_post funciton for given hastag and calling collect_post_image funtion
     if filename == '':
-        print(f'Images already exist for tag #{args.hashtag}. Nothing to download')
+        print(f'Postss not collected for tag #{args.hashtag}. Nothing to download')
     else:
         collect_post_image(filename)
-
-

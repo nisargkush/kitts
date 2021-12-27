@@ -1,12 +1,15 @@
 """Instagram Post scrapper, post collection and image downloader
 Usage:
-   collect_content.py (-u | --dir)  <User Name> (-p | --dir)  <User Password> (-t | --dir)  <hashtag without #>
-   collect_content.py (-h | --help)
-   
+  collect_content.py (-u | --username) <Instagram User Name> (-p | --password) <password> (-t | --hashtag) <Hashtag without '#'> (-b | --basepath) <path name>
+  collect_content.py (-h | --help)
+  collect_content.py --version
 Options:
   -h --help              Show this screen.
+  -u | --username      	 Instagram username  to login
+  -p | --password		    Password
+  -t | --hashtag		    Hashtag without '#'
+  -b | --basepath		    Directory to store post csv file and images in subfolder (Optional)  
   --version              Show version.
-  -d --download-dir      Download directory of the project, default is the current script directory ../../data/AVA/images
 """
 
 #imports here

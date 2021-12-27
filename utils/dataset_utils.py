@@ -1,22 +1,28 @@
-# -*- coding: utf-8 -*-
 """
-Created on Mon Nov 29 16:46:23 2021
-
-@author: nkushwaha
+Instagram data collection utillities Annotater
+Usage:
+    Used inside other project methods. Can also be directly called from notebook    
+Methods:
+    accumulate_dataframe : Accumulates CSV file in mentoined path to a composit Dataframe
+    dedup_dataframe : Removes duplicate data based on shortcode such that record with highest likes is kept
+    condition_labels : Removes words from img_labels column that matches exclude list
+    geo_coordinates : Utliliyy to enrich collected post data with geocodes - Lattitude & Longitude and normalize city and country names
 """
 
-import io
 import os
-import re
 #import argparse
 import pandas as pd
 from pathlib import Path
 from kitts.config import ANNOTATED_DIR, EXCLUDE, MAPQKEY, MAPQURL
-from kitts.utils import dataset_utils
 
 
 def accumulate_dataframe(filepath = ANNOTATED_DIR):
-    """Accumulates CSV file in mentoined path to a composit Dataframe"""    
+    """Accumulates CSV file in mentoined path to a composit Dataframe
+    Parameters:
+        filepath : Path of files to be collected and combined as a big dataframe
+    Returns:
+        Combined dataframe to be used by ML model
+    """    
      #Checking existence of files for given hastag and calling collect_post funtion
     if os.path.isdir(filepath):
         print(f'Source Path exists: {filepath}')
@@ -36,13 +42,23 @@ def accumulate_dataframe(filepath = ANNOTATED_DIR):
         print(f'Source Path does not exists: {filepath}')
         
 def dedup_dataframe(dataframe):
-    """Removes duplicate data based on shortcode such that record with highest likes is kept"""
+    """Removes duplicate data based on shortcode such that record with highest likes is kept
+    Parameters:
+        dataframe : dataframe , that may contain duplicate posts
+    Returns:
+        dataframe : deduped dataframe based on logic mentioned above
+    """
     sortedbdf = dataframe.sort_values(by=['shortcode', 'likes'], ascending=False)
     dedup_df = sortedbdf.drop_duplicates(subset = ["shortcode"], keep = 'first')
     return dedup_df
 
 def condition_labels(dataframe, column_name ='img_lables', exclude = False, exclude_tokens = EXCLUDE):
-    """Removes words from img_labels column that matches exclude list"""
+    """Removes words from img_labels column that matches exclude list, so that do not cloud Model features with ubiquitous words
+    Parameters:
+        dataframe : dataframe, that may contain upper/camel format words or words to be excludes
+    Returns:
+        dataframe : dataframe, with words removed based on exclude list and lower formated
+    """
     dataframe[column_name] = dataframe[column_name].astype(str)
     dataframe[column_name] = dataframe[column_name].apply(lambda x: x.lower())
     if exclude:
@@ -52,60 +68,14 @@ def condition_labels(dataframe, column_name ='img_lables', exclude = False, excl
       
     return dataframe
 
-"""
-Depricated
-def geo_coordinates(address):
-    Utility to obtain geocoding for given address using Mapquest API services
-    Parameters:
-        Address - A string containing address to be geocoded
-    Return:
-        lattitude,longitude,geo_city,geo_state,geo_country
-    import requests
-    import json
-    
-    lattitude = ''
-    longitude = ''
-    geo_city = ''
-    geo_state = ''
-    geo_country = ''
-
-    print('calling geo_coordinates for {address}')  
-    parameters = {
-        "key": MAPQKEY,
-        "location": address
-    }
-
-    try:
-        response = requests.get(MAPQURL, params=parameters)
-    
-        if response.status_code ==  200:                 
-            jdata = json.loads(response.text)['results']              
-            lattitude = jdata[0]['locations'][0]['latLng']['lat']
-            longitude = jdata[0]['locations'][0]['latLng']['lng']
-            geo_city = jdata[0]['locations'][0]['adminArea5']
-            geo_state = jdata[0]['locations'][0]['adminArea3']
-            geo_country = jdata[0]['locations'][0]['adminArea1'] 
-    except:                
-        str_address = address.split(',')
-        if len(str_address)==1:
-            geo_city = str_address[0]
-        elif len(str_address)==2:
-            geo_city = str_address[0]
-            geo_country = str_address[1]
-        elif len(str_address)==3:
-            geo_city = str_address[0]
-            geo_state = str_address[1]
-            geo_country = str_address[2]
-        else:   
-            pass
-    print('Success - calling geo_coordinates for {address}')  
-    return lattitude,longitude,geo_city,geo_state,geo_country
-
-"""
-
 
 def geo_coordinates(datafile):
-    """For one time use only to upgrade already downloaded data with geocodes"""
+    """Utliliyy to enrich collected post data with geocodes - Lattitude & Longitude and normalize city and country names
+    Parameters:
+        datafile : Path of file to be gecoded
+    Returns:
+        datafile : Geocoded data file path
+    """
     
     import pandas as pd
     import requests
@@ -177,14 +147,13 @@ def geo_coordinates(datafile):
     
     print("Geocoded file path:",datafile)
 
-def normalize_date(filepath):
-    
-    """to be used only for Bulk correction/normalozation of date format to normalize()
+def normalize_date(filepath):    
+    """Normalizes date format to date only format and saves csv file back to same path
     function to normalize date column to post_date column
     Parameters:
-        Data -> Dataframe
+        filepath : Path of files to be date-normalized
     Returns:
-        Dataframe with normalized date
+        None
     """	
 	
     import pandas as pd
@@ -204,7 +173,12 @@ def normalize_date(filepath):
         print(f'Source Path does not exists: {filepath}')
             
 def geo_coordinates_df(datafile):
-    """For one time use only to upgrade already downloaded data with geocodes"""
+    """For one time use only to upgrade already downloaded csv file that do not contain geocoding columns with geocodes
+    Parameters:
+        datafile : Path of file to be gecoded
+    Returns:
+        data : Geocoded dataframe to display
+    """
     
     import pandas as pd
     import requests
@@ -284,3 +258,54 @@ def geo_coordinates_df(datafile):
     print("Geocoded file path:",datafile)
     
     return data
+
+"""
+Depricated
+def geo_coordinates(address):
+    Utility to obtain geocoding for given address using Mapquest API services
+    Parameters:
+        Address - A string containing address to be geocoded
+    Return:
+        lattitude,longitude,geo_city,geo_state,geo_country
+    import requests
+    import json
+    
+    lattitude = ''
+    longitude = ''
+    geo_city = ''
+    geo_state = ''
+    geo_country = ''
+
+    print('calling geo_coordinates for {address}')  
+    parameters = {
+        "key": MAPQKEY,
+        "location": address
+    }
+
+    try:
+        response = requests.get(MAPQURL, params=parameters)
+    
+        if response.status_code ==  200:                 
+            jdata = json.loads(response.text)['results']              
+            lattitude = jdata[0]['locations'][0]['latLng']['lat']
+            longitude = jdata[0]['locations'][0]['latLng']['lng']
+            geo_city = jdata[0]['locations'][0]['adminArea5']
+            geo_state = jdata[0]['locations'][0]['adminArea3']
+            geo_country = jdata[0]['locations'][0]['adminArea1'] 
+    except:                
+        str_address = address.split(',')
+        if len(str_address)==1:
+            geo_city = str_address[0]
+        elif len(str_address)==2:
+            geo_city = str_address[0]
+            geo_country = str_address[1]
+        elif len(str_address)==3:
+            geo_city = str_address[0]
+            geo_state = str_address[1]
+            geo_country = str_address[2]
+        else:   
+            pass
+    print('Success - calling geo_coordinates for {address}')  
+    return lattitude,longitude,geo_city,geo_state,geo_country
+
+"""

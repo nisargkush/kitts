@@ -80,3 +80,4 @@ def showimlable(dataframe, n):
     print ('Post Date: ',data['post_date'])
     print ('City: ',data['city'])
     print ('Image Labels: ',data['img_lables'])
+    

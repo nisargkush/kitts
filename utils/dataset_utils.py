@@ -6,6 +6,7 @@ Methods:
     accumulate_dataframe : Accumulates CSV file in mentoined path to a composit Dataframe
     dedup_dataframe : Removes duplicate data based on shortcode such that record with highest likes is kept
     condition_labels : Removes words from img_labels column that matches exclude list
+    azure_upload : Utility to upload Scrapped Images on Azure Storage container and as Blob with anonymous read access
     geo_coordinates : Utliliyy to enrich collected post data with geocodes - Lattitude & Longitude and normalize city and country names
 """
 
@@ -13,7 +14,7 @@ import os
 #import argparse
 import pandas as pd
 from pathlib import Path
-from kitts.config import ANNOTATED_DIR, EXCLUDE, MAPQKEY, MAPQURL
+from kitts.config import DATA_FILES_DIR, ANNOTATED_DIR, EXCLUDE, MAPQKEY, MAPQURL, AZ_CONN_STRING, AZ_CONTAINER
 
 
 def accumulate_dataframe(filepath = ANNOTATED_DIR):
@@ -68,9 +69,57 @@ def condition_labels(dataframe, column_name ='img_lables', exclude = False, excl
       
     return dataframe
 
+def azure_upload(file = '', bulk_upload =  False, fpath = DATA_FILES_DIR ):       
+    """Utility to upload Scrapped Images on Azure Storage container and as Blob with anonymous read access
+    Parameters:
+        file : If populated will upload given file to AZ_CONTAINER
+		bulk_upload : Boolean, to check single file upload or bulk file upload
+		fpath : Path containg blob file to be uploaded in bulk
+    Returns:
+        None
+    """
+
+    from azure.storage.blob import BlobServiceClient
+    import os
+    
+    
+    connection_string = AZ_CONN_STRING
+    container_name = AZ_CONTAINER
+    blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+    
+    if not bulk_upload:  
+        try:
+                   
+            file_path, file_name= os.path.split(file)               
+            blob_client = blob_service_client.get_blob_client(container=container_name, blob=file_name)
+            with open(file, "rb") as data:
+                blob_client.upload_blob(data)
+                print(f'uploaded file {file_name}')
+        except Exception as e:
+            print(f'Exception while uploading single file {e}')
+    else:        
+        if os.path.isdir(fpath):
+            print(f'Source Path exists: {fpath}')
+            counter = 0
+            try:            
+                for ifile in Path(fpath).glob('*.jpg'):                                
+                    file_path, file_name= os.path.split(ifile)
+                    try:                        
+                        blob_client = blob_service_client.get_blob_client(container=container_name, blob=file_name)
+                        with open(ifile, "rb") as data:
+                            blob_client.upload_blob(data)
+                        counter += 1
+                    except:
+                        pass
+            except Exception as e:                
+                print(e)
+            print(f'Tota Number of files uploaded {counter}')            
+        else:        
+            print(f'Source Path does not exists: {fpath}')
+
 
 def geo_coordinates(datafile):
-    """Utliliyy to enrich collected post data with geocodes - Lattitude & Longitude and normalize city and country names
+    """Utlility to enrich collected post data with geocodes - Lattitude & Longitude and normalize city and country names
     Parameters:
         datafile : Path of file to be gecoded
     Returns:
@@ -258,54 +307,3 @@ def geo_coordinates_df(datafile):
     print("Geocoded file path:",datafile)
     
     return data
-
-"""
-Depricated
-def geo_coordinates(address):
-    Utility to obtain geocoding for given address using Mapquest API services
-    Parameters:
-        Address - A string containing address to be geocoded
-    Return:
-        lattitude,longitude,geo_city,geo_state,geo_country
-    import requests
-    import json
-    
-    lattitude = ''
-    longitude = ''
-    geo_city = ''
-    geo_state = ''
-    geo_country = ''
-
-    print('calling geo_coordinates for {address}')  
-    parameters = {
-        "key": MAPQKEY,
-        "location": address
-    }
-
-    try:
-        response = requests.get(MAPQURL, params=parameters)
-    
-        if response.status_code ==  200:                 
-            jdata = json.loads(response.text)['results']              
-            lattitude = jdata[0]['locations'][0]['latLng']['lat']
-            longitude = jdata[0]['locations'][0]['latLng']['lng']
-            geo_city = jdata[0]['locations'][0]['adminArea5']
-            geo_state = jdata[0]['locations'][0]['adminArea3']
-            geo_country = jdata[0]['locations'][0]['adminArea1'] 
-    except:                
-        str_address = address.split(',')
-        if len(str_address)==1:
-            geo_city = str_address[0]
-        elif len(str_address)==2:
-            geo_city = str_address[0]
-            geo_country = str_address[1]
-        elif len(str_address)==3:
-            geo_city = str_address[0]
-            geo_state = str_address[1]
-            geo_country = str_address[2]
-        else:   
-            pass
-    print('Success - calling geo_coordinates for {address}')  
-    return lattitude,longitude,geo_city,geo_state,geo_country
-
-"""

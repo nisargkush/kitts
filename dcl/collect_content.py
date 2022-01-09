@@ -29,7 +29,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 from datetime import datetime
 from bs4 import BeautifulSoup
 from kitts.config import  DATA_FILES_DIR, RAW_DATA_DIR, WEBDRIVER_LOC, BASE_URL
-#from kitts.utils import dataset_utils
+from kitts.utils import dataset_utils
 
 
 def collect_posts(user, userpass, hashtag, base_path = DATA_FILES_DIR):
@@ -112,13 +112,13 @@ def collect_posts(user, userpass, hashtag, base_path = DATA_FILES_DIR):
             try:
                 location = jsondata["graphql"]["shortcode_media"]["location"]["name"]
             except:
-                location = 'dummy'
+                location = ''
             try:
                 address_j = json.loads(jsondata["graphql"]["shortcode_media"]["location"]["address_json"])
                 city = address_j['city_name']
                 exact_city_match = address_j['exact_city_match']
             except:
-                city = 'dummy'
+                city = ''
                 exact_city_match = ''
             #has_public_page = jsondata["graphql"]["shortcode_media"]["location"]["has_public_page"]
             is_video = jsondata["graphql"]["shortcode_media"]["is_video"]
@@ -213,6 +213,12 @@ def collect_post_image(file):
                 try:
                     wget.download(row['display_url'], save_as)
                     img_path_list.append(save_as)
+                    try:
+                        dataset_utils.azure_upload(save_as, bulk_upload = False)
+                        print(f'Uploaded file to Azure container {save_as}')
+                    except:                        
+                        print(f'Upload to Azure container failed for {save_as}')
+                        pass
                     counter += 1
                 except:
                     img_path_list.append('')
@@ -255,3 +261,5 @@ if __name__ == '__main__':
         print(f'Postss not collected for tag #{args.hashtag}. Nothing to download')
     else:
         collect_post_image(filename)
+
+

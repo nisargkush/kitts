@@ -40,7 +40,7 @@ def gcv_annotate(file):
     """
     file_path, file_name= os.path.split(file)
     #print("file_path",file_path)
-    print("file_name",file_name)  
+    print("Annotating Image labels for file_name",file_name)  
     
     #print("GAPP_CRED",GAPP_CRED) 
     #print("DATA_DIR",DATA_DIR)  
@@ -112,3 +112,5 @@ if __name__ == '__main__':
             gcv_annotate(file)
     else:        
         print(f'Source Path does not exists: {args.filepath}')
+    
+

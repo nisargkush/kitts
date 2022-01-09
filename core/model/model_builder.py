@@ -180,7 +180,7 @@ class kittsCluster():
     
         if print_silhouette_val:
             sample_silhouette_values = silhouette_samples(self.feature_vectors, km.labels_)
-            print(f"Silhouette values:")
+            print("Silhouette values:")
             silhouette_values = []
             for i in range(n):
                 cluster_silhouette_values = sample_silhouette_values[km.labels_ == i]
@@ -218,7 +218,7 @@ class kittsCluster():
             print(tokens_per_cluster)
         return cluster_words    
     
-    def display_cluster_2D(self, cluster):
+    def visualize_cluster_2D(self, cluster):
         """Display 2D representztion of clustered points using PCA"""        
         
         
@@ -242,7 +242,7 @@ class kittsCluster():
         plt.scatter(centers[:, 0], centers[:, 1],c='black', s=50, alpha=0.6)
         plt.show()    
         
-    def display_cluster_3D(self, cluster):
+    def visualize_cluster_3D(self, cluster):
         """Display 3D representztion of clustered points using PCA"""        
         
         
@@ -269,7 +269,7 @@ class kittsCluster():
         ax.scatter3D(centers[:, 0], centers[:, 1],centers[:, 2],c='black', s=50, alpha=0.6)
         plt.show()     
     
-    def display_wv_cluster_2D(self, cluster):
+    def visualize_wv_cluster_2D(self, cluster):
         """Display 2D representztion of clustered points using PCA"""        
         
         
@@ -297,7 +297,7 @@ class kittsCluster():
         plt.scatter(centers[:, 0], centers[:, 1],c='black', s=50, alpha=0.6)
         plt.show()    
         
-    def display_wv_cluster_3D(self, cluster):
+    def visualize_wv_cluster_3D(self, cluster):
         """Display 3D representztion of clustered points using PCA"""        
         
         
@@ -414,6 +414,13 @@ class CorexModel():
         import corextopic.vis_topic as vt
         vt.vis_rep(corex = topic_model, column_label=words, prefix = 'corex_visuals' )
         
+    def convert_lable(self, value, column):
+        "to be used as lambda function to covert True/False values in corex model lables to column name"
+        if value:
+            return column
+        else:
+            return ''
+        
     def clustered_data(self, topic_model, data, cluster_columns = TOURISM_ANCHORS, fpath = CLUSTERED_DIR):
         """
         funtion will create a dataframe such that each data point 
@@ -427,13 +434,31 @@ class CorexModel():
         #generating topic columns to be added to dataframe
         if len(cluster_columns) < len(topic_model.labels[0]):
             for i in range (len(cluster_columns), len(topic_model.labels[0])):
-                cluster_columns.append(f'extra{i+1}')  
-                
+                cluster_columns.append(f'extra{i+1}')   
+        
+        #Dropping irrelavant columns
+        data = data.drop(['post_url','like_and_view_counts_disabled','is_paid_partnership',
+                          'exact_city_match','is_video','is_verified','is_private','img_lable_scores'],
+                         axis =1)
+                        
         #converting date to format 'YYYY-MM-DD'
         data['post_date'] = pd.to_datetime(data['post_date']).dt.normalize()
         
-        #Appending cluster to data(frame) and writing it to .csv file
+        #Appending cluster to data(frame) with Topic keywords
         data[cluster_columns] = topic_model.labels
+        for column in cluster_columns:
+            data[column] = data[column].apply(lambda val: self.convert_lable(val, column)) 
+            
+        #creating concatenation of labels as column 'combined_labels'
+        for index, rows in data.iterrows(): 
+            s = ''
+            for column in cluster_columns:
+                if data.at[index,column] == '':
+                    pass
+                else:
+                    s = s + ' ' + data.at[index,column]
+            data.at[index,'combined_labels'] = s.strip()
+        
         file_path = os.path.join(fpath,'Corex_Cluster_Data.csv')
         data.to_csv(file_path,index=False)
         print(f'file created and saved at {file_path}')
